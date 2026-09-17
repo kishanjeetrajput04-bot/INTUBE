@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<meta name="theme-color" content="#000000">
+<title>INTUBE - Social App</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root{--pink:#E91E63;--pink-dark:#C2185B;--bg:#000;--card:#121212;--card2:#1e1e1e;--text:#fff;--muted:#888;--border:#262626;--green:#4CAF50}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;overflow:hidden;overscroll-behavior:none}
+body{display:flex;flex-direction:column}
+button,input,textarea{font-family:inherit}
+button{cursor:pointer;border:none;outline:none}
+img,video{display:block;max-width:100%}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-thumb{background:#333;border-radius:4px}
+#splash{position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#E91E63 0%,#9C27B0 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .5s}
+#splash h1{font-size:48px;letter-spacing:4px;font-weight:900;color:#fff;text-shadow:0 4px 20px rgba(0,0,0,.3)}
+#splash p{color:rgba(255,255,255,.8);margin-top:8px;font-size:14px;letter-spacing:2px}
+#splash .loader{margin-top:40px;width:40px;height:40px;border:3px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#app{display:none;flex-direction:column;height:100vh;height:100dvh}
+#app.active{display:flex}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:#000;border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100}
+.topbar .logo{font-size:24px;font-weight:900;letter-spacing:2px;background:linear-gradient(45deg,#E91E63,#FF9800);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.topbar .actions{display:flex;gap:16px}
+.topbar .actions button{background:none;color:#fff;font-size:20px;padding:4px}
+.topbar .actions button:hover{color:var(--pink)}
+#main{flex:1;overflow-y:auto;overflow-x:hidden;padding-bottom:80px;position:relative;-webkit-overflow-scrolling:touch}
+.screen{display:none;animation:fadeIn .25s}
+.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.stories{display:flex;gap:12px;padding:12px 16px;overflow-x:auto;border-bottom:1px solid var(--border);scrollbar-width:none}
+.stories::-webkit-scrollbar{display:none}
+.story-item{flex-shrink:0;text-align:center;width:72px}
+.story-ring{width:68px;height:68px;border-radius:50%;padding:3px;background:linear-gradient(45deg,#E91E63,#FF9800,#9C27B0);cursor:pointer;position:relative}
+.story-ring.seen{background:#333}
+.story-ring .inner{width:100%;height:100%;border-radius:50%;background:#000;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:24px;color:#fff;font-weight:bold;border:2px solid #000}
+.story-ring .inner img{width:100%;height:100%;object-fit:cover}
+.story-item .name{font-size:11px;color:var(--muted);margin-top:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.story-ring .add-btn{position:absolute;bottom:0;right:0;width:22px;height:22px;border-radius:50%;background:var(--pink);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;border:2px solid #000}
+.post{background:var(--card);margin-bottom:8px;border-bottom:1px solid var(--border)}
+.post-header{display:flex;align-items:center;padding:12px;gap:12px}
+.avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#E91E63,#9C27B0);display:flex;align-items:center;justify-content:center;font-weight:bold;color:#fff;font-size:16px;flex-shrink:0;overflow:hidden}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.post-header .info{flex:1}
+.post-header .username{font-weight:600;font-size:14px}
+.post-header .meta{font-size:11px;color:var(--muted);margin-top:2px}
+.post-header .menu-btn{background:none;color:#fff;font-size:20px}
+.post-media{width:100%;background:#000;position:relative;overflow:hidden}
+.post-media img,.post-media video{width:100%;height:auto;max-height:600px;object-fit:cover}
+.post-actions{display:flex;gap:16px;padding:12px;font-size:24px}
+.post-actions button{background:none;color:#fff;font-size:24px;padding:0;transition:transform .15s}
+.post-actions button:active{transform:scale(1.2)}
+.post-actions button.liked{color:#E91E63}
+.post-actions .spacer{flex:1}
+.post-info{padding:0 12px 12px}
+.post-info .likes{font-weight:600;font-size:14px;margin-bottom:4px}
+.post-info .caption{font-size:14px;line-height:1.4}
+.post-info .caption b{margin-right:6px}
+.post-info .time{font-size:11px;color:var(--muted);margin-top:6px;text-transform:uppercase}
+#reels-container{height:calc(100vh - 60px - 80px);height:calc(100dvh - 60px - 80px);overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none}
+#reels-container::-webkit-scrollbar{display:none}
+.reel{height:100%;scroll-snap-align:start;position:relative;background:#000;display:flex;align-items:center;justify-content:center}
+.reel video{width:100%;height:100%;object-fit:contain}
+.reel .overlay{position:absolute;bottom:0;left:0;right:0;padding:20px;background:linear-gradient(transparent,rgba(0,0,0,.8));display:flex;align-items:flex-end;gap:12px}
+.reel .info{flex:1;color:#fff}
+.reel .info .username{font-weight:600;margin-bottom:6px}
+.reel .info .caption{font-size:13px;opacity:.9}
+.reel .side-actions{display:flex;flex-direction:column;gap:20px;align-items:center;color:#fff}
+.reel .side-actions button{background:none;color:#fff;font-size:26px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.reel .side-actions button span{font-size:11px}
+.reel .side-actions button.liked{color:#E91E63}
+.reel .seen-badge{position:absolute;top:12px;right:12px;background:rgba(0,0,0,.6);color:#fff;padding:4px 10px;border-radius:20px;font-size:11px}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:#000;border-top:1px solid var(--border);padding:8px 0 calc(8px + env(safe-area-inset-bottom));z-index:200}
+.bottom-nav button{flex:1;background:none;color:var(--muted);font-size:22px;padding:6px 0;display:flex;flex-direction:column;align-items:center;transition:color .2s}
+.bottom-nav button.active{color:var(--pink)}
+.bottom-nav button span{font-size:10px;margin-top:2px}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-bg.active{display:flex;animation:fadeIn .2s}
+.modal{background:var(--card2);border-radius:16px;padding:24px;width:100%;max-width:400px;max-height:85vh;overflow-y:auto}
+.modal h2{margin-bottom:16px;font-size:20px}
+.modal input,.modal textarea{width:100%;padding:12px;margin-bottom:12px;background:#000;border:1px solid var(--border);border-radius:8px;color:#fff;font-size:14px}
+.modal textarea{resize:vertical;min-height:80px}
+.modal .btn-row{display:flex;gap:12px;margin-top:8px}
+.btn{flex:1;padding:12px;border-radius:8px;background:var(--pink);color:#fff;font-weight:600;font-size:14px;transition:background .2s}
+.btn:active{background:var(--pink-dark)}
+.btn.secondary{background:#333}
+.file-pick{display:flex;gap:12px;margin-bottom:16px}
+.file-pick label{flex:1;padding:16px;border:2px dashed var(--border);border-radius:8px;text-align:center;cursor:pointer;transition:border-color .2s;font-size:13px}
+.file-pick label:hover{border-color:var(--pink)}
+.file-pick input{display:none}
+.preview{width:100%;max-height:200px;object-fit:contain;background:#000;border-radius:8px;margin-bottom:12px}
+.chat-list-item{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer}
+.chat-list-item:hover{background:var(--card)}
+.chat-list-item .info{flex:1}
+.chat-list-item .info .name{font-weight:600;font-size:14px}
+.chat-list-item .info .last{color:var(--muted);font-size:12px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chat-window{display:flex;flex-direction:column;height:100vh;height:100dvh;background:var(--bg);position:fixed;inset:0;z-index:500}
+.chat-header{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);background:#000;position:sticky;top:0;z-index:10}
+.chat-header .back{background:none;color:#fff;font-size:22px}
+.chat-header .name{font-weight:600}
+.chat-messages{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:75%;padding:8px 14px;border-radius:18px;font-size:14px;word-wrap:break-word}
+.msg.me{align-self:flex-end;background:var(--pink);color:#fff;border-bottom-right-radius:4px}
+.msg.other{align-self:flex-start;background:#333;color:#fff;border-bottom-left-radius:4px}
+.msg .time{font-size:10px;opacity:.7;margin-top:4px;display:block;text-align:right}
+.chat-input{display:flex;gap:8px;padding:12px 16px calc(12px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:#000}
+.chat-input input{flex:1;padding:12px 16px;background:var(--card2);border:none;border-radius:24px;color:#fff;font-size:14px;outline:none}
+.chat-input button{background:var(--pink);color:#fff;padding:0 20px;border-radius:24px;font-weight:600;font-size:14px}
+.profile-header{padding:24px 16px;text-align:center}
+.profile-header .big-avatar{width:90px;height:90px;border-radius:50%;background:linear-gradient(135deg,#E91E63,#9C27B0);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:bold;color:#fff;margin:0 auto 12px;overflow:hidden}
+.profile-header .big-avatar img{width:100%;height:100%;object-fit:cover}
+.profile-header .uname{font-size:20px;font-weight:600}
+.profile-header .email{color:var(--muted);font-size:13px;margin-top:4px}
+.profile-stats{display:flex;justify-content:space-around;padding:16px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.profile-stats .stat{text-align:center}
+.profile-stats .stat .num{font-size:20px;font-weight:700}
+.profile-stats .stat .lbl{font-size:12px;color:var(--muted);margin-top:2px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;padding:2px}
+.grid .item{position:relative;aspect-ratio:1;background:#000;overflow:hidden;cursor:pointer}
+.grid .item img,.grid .item video{width:100%;height:100%;object-fit:cover}
+.grid .item .type-badge{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.6);padding:2px 6px;border-radius:10px;font-size:10px}
+#toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,.15);backdrop-filter:blur(10px);color:#fff;padding:10px 20px;border-radius:24px;font-size:13px;z-index:5000;opacity:0;transition:opacity .3s;pointer-events:none;white-space:nowrap;max-width:90vw;overflow:hidden;text-overflow:ellipsis}
+#toast.show{opacity:1}
+.spinner{width:32px;height:32px;border:3px solid rgba(255,255,255,.2);border-top-color:var(--pink);border-radius:50%;animation:spin 1s linear infinite;margin:40px auto}
+.empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.empty .icon{font-size:60px;margin-bottom:16px;opacity:.5}
+.scroll-top{position:fixed;bottom:100px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--pink);color:#fff;display:none;align-items:center;justify-content:center;font-size:20px;box-shadow:0 4px 12px rgba(233,30,99,.5);z-index:150}
+.scroll-top.show{display:flex}
+@media(min-width:768px){#app{max-width:500px;margin:0 auto;border-left:1px solid var(--border);border-right:1px solid var(--border)}.bottom-nav{max-width:500px;left:50%;transform:translateX(-50%)}}
+</style>
+</head>
+<body>
+
+<div id="splash">
+  <h1>INTUBE</h1>
+  <p>SHARE • CONNECT • EXPLORE</p>
+  <div class="loader"></div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <div class="logo">INTUBE</div>
+    <div class="actions">
+      <button id="btn-refresh" title="Refresh">🔄</button>
+      <button id="btn-logout" title="Logout">⏻</button>
+    </div>
+  </div>
+
+  <div id="main">
+    <div class="screen active" id="screen-home">
+      <div class="stories" id="stories-bar"></div>
+      <div id="feed"></div>
+    </div>
+    <div class="screen" id="screen-reels">
+      <div id="reels-container"></div>
+    </div>
+    <div class="screen" id="screen-chat">
+      <div id="chat-list"></div>
+    </div>
+    <div class="screen" id="screen-profile">
+      <div id="profile-content"></div>
+    </div>
+  </div>
+
+  <div class="bottom-nav">
+    <button data-tab="home" class="active">🏠<span>Home</span></button>
+    <button data-tab="reels">🎬<span>Reels</span></button>
+    <button data-tab="upload">➕<span>Post</span></button>
+    <button data-tab="chat">💬<span>Chat</span></button>
+    <button data-tab="profile">👤<span>Profile</span></button>
+  </div>
+
+  <button class="scroll-top" id="scroll-top">↑</button>
+</div>
+
+<div class="modal-bg" id="auth-modal">
+  <div class="modal">
+    <h2 id="auth-title">INTUBE mein aao</h2>
+    <input id="auth-name" type="text" placeholder="Username">
+    <input id="auth-email" type="email" placeholder="Email">
+    <input id="auth-pass" type="password" placeholder="Password (min 4 chars)">
+    <div class="btn-row">
+      <button class="btn" id="auth-submit">Login</button>
+      <button class="btn secondary" id="auth-switch">Signup</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="upload-modal">
+  <div class="modal">
+    <h2>Naya Post</h2>
+    <div class="file-pick">
+      <label>📷 Photo<input type="file" id="file-image" accept="image/*"></label>
+      <label>🎥 Video<input type="file" id="file-video" accept="video/*"></label>
+    </div>
+    <div id="upload-preview"></div>
+    <textarea id="upload-caption" placeholder="Caption likho..."></textarea>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="closeModal('upload-modal')">Cancel</button>
+      <button class="btn" id="upload-submit">Post karo</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="upload-type-modal">
+  <div class="modal">
+    <h2>Kya upload karna hai?</h2>
+    <div class="btn-row" style="flex-direction:column;">
+      <button class="btn" onclick="openUpload('post')">📸 Post (Feed mein)</button>
+      <button class="btn" onclick="openUpload('reel')">🎬 Reel (Fullscreen)</button>
+      <button class="btn secondary" onclick="closeModal('upload-type-modal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg" id="story-modal">
+  <div class="modal">
+    <h2>Story add karo</h2>
+    <div class="file-pick">
+      <label>📷 Photo<input type="file" id="story-file" accept="image/*"></label>
+    </div>
+    <div id="story-preview"></div>
+    <div class="btn-row">
+      <button class="btn secondary" onclick="closeModal('story-modal')">Cancel</button>
+      <button class="btn" id="story-submit">Story daalo</button>
+    </div>
+  </div>
+</div>
+
+<div id="story-viewer">
+  <div class="story-progress" id="story-progress"></div>
+  <div class="story-content" id="story-content">
+    <div class="story-nav left" onclick="prevStory()"></div>
+    <div class="story-nav right" onclick="nextStory()"></div>
+  </div>
+  <div class="story-topbar">
+    <div class="avatar" id="story-avatar">U</div>
+    <div class="name" id="story-name">User</div>
+    <button class="close" onclick="closeStoryViewer()" style="background:none;color:#fff;font-size:24px;">✕</button>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ============ DEMO DATA STORAGE (localStorage) ============
+const DB = {
+  posts: JSON.parse(localStorage.getItem('intube_posts') || '[]'),
+  reels: JSON.parse(localStorage.getItem('intube_reels') || '[]'),
+  stories: JSON.parse(localStorage.getItem('intube_stories') || '[]'),
+  users: JSON.parse(localStorage.getItem('intube_users') || '[]'),
+  chats: JSON.parse(localStorage.getItem('intube_chats') || '{}'),
+  currentUser: JSON.parse(localStorage.getItem('intube_current') || 'null'),
+
+  save() {
+    localStorage.setItem('intube_posts', JSON.stringify(this.posts));
+    localStorage.setItem('intube_reels', JSON.stringify(this.reels));
+    localStorage.setItem('intube_stories', JSON.stringify(this.stories));
+    localStorage.setItem('intube_users', JSON.stringify(this.users));
+    localStorage.setItem('intube_chats', JSON.stringify(this.chats));
+    localStorage.setItem('intube_current', JSON.stringify(this.currentUser));
+  }
+};
+
+// ============ NETWORK TRACKER (Special Feature) ============
+const NetworkTracker = {
+  getCurrentNetworkId() {
+    try {
+      const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+      const type = conn ? conn.effectiveType : 'unknown';
+      const online = navigator.onLine ? 'on' : 'off';
+      return `${online}-${type}`;
+    } catch {
+      return navigator.onLine ? 'online' : 'offline';
+    }
+  },
+
+  checkAndResetIfNetworkChanged() {
+    const currentId = this.getCurrentNetworkId();
+    const lastId = localStorage.getItem('intube_net_id');
+    if (lastId && lastId !== currentId) {
+      localStorage.setItem('intube_net_id', currentId);
+      localStorage.removeItem('intube_seen_reels');
+      return true;
+    }
+    localStorage.setItem('intube_net_id', currentId);
+    return false;
+  },
+
+  markReelSeen(id) {
+    const seen = JSON.parse(localStorage.getItem('intube_seen_reels') || '[]');
+    if (!seen.includes(id)) {
+      seen.push(id);
+      localStorage.setItem('intube_seen_reels', JSON.stringify(seen));
+    }
+  },
+
+  getSeenReels() {
+    return JSON.parse(localStorage.getItem('intube_seen_reels') || '[]');
+  }
+};
+
+window.addEventListener('online', () => {
+  if (NetworkTracker.checkAndResetIfNetworkChanged()) {
+    showToast('🌐 Network change! Fresh feed');
+    renderFeed();
+    renderReels();
+  }
+});
+window.addEventListener('offline', () => showToast('📴 Offline mode'));
+
+// ============ HELPERS ============
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+function showToast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2500);
+}
+function openModal(id) { $('#' + id).classList.add('active'); }
+function closeModal(id) { $('#' + id).classList.remove('active'); }
+function escapeHtml(str) {
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+function timeAgo(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000);
+  if (s < 60) return 'abhi';
+  if (s < 3600) return Math.floor(s / 60) + 'm';
+  if (s < 86400) return Math.floor(s / 3600) + 'h';
+  return Math.floor(s / 86400) + 'd';
+}
+function fileToDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ============ AUTH ============
+let authMode = 'signup';
+
+$('#auth-switch').onclick = () => {
+  authMode = authMode === 'login' ? 'signup' : 'login';
+  $('#auth-title').textContent = authMode === 'login' ? 'Login karo' : 'Naya account';
+  $('#auth-submit').textContent = authMode === 'login' ? 'Login' : 'Signup';
+  $('#auth-switch').textContent = authMode === 'login' ? 'Signup' : 'Login';
+};
+
+$('#auth-submit').onclick = () => {
+  const name = $('#auth-name').value.trim();
+  const email = $('#auth-email').value.trim();
+  const pass = $('#auth-pass').value;
+
+  if (!email || pass.length < 4) return showToast('Email aur 4+ char password daalo');
+
+  if (authMode === 'signup') {
+    if (!name) return showToast('Username daalo');
+    if (DB.users.find(u => u.email === email)) return showToast('Email already registered');
+    const user = {
+      id: 'u_' + Date.now(),
+      username: name,
+      email,
+      password: pass,
+      createdAt: Date.now()
+    };
+    DB.users.push(user);
+    DB.currentUser = user;
+    DB.save();
+    enterApp();
+    showToas
